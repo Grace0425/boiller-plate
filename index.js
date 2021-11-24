@@ -4,7 +4,7 @@ const port = 5000
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser'); //express에서 제공되는 모듈
 const config = require('./config/dev');
-const { auth } = require('./middleware/auth')
+const { auth } = require('./middleware/auth');
 const { User } = require('./models/User');
 
 
@@ -39,7 +39,7 @@ app.post('/api/users/register', (req, res) => {
 //로그인 route
 app.post('/api/users/login', (req, res) => {
     //요청된 이메일을 데이터베이스에서 있는지 찾는다.
-    User.findOne({ email: req.body.email }, (err, userInfo) => { //몽고db 관련 메소드
+    User.findOne({ email: req.body.email }, (err, userInfo) => { //몽고db에 있는 기존 메소드
         if (!userInfo) {
             return res.json({
                 loginSuccess: false,
@@ -62,8 +62,33 @@ app.post('/api/users/login', (req, res) => {
     })
 })
 
+//role 1 어드민, role 2 특정 부서 어드민
+//role 0 일반유저, role 0이 아니면 관리자
+//인증 route
 app.get('/api/users/auth', (req, res) => {
+    //여기까지 미들웨어를 통과해 왔다는 얘기는 Authentication이 True라는 말.
+    res.status(200).json({
+        _id: req.user._id,
+        isAdmin: req.user.role === 0 ? false : true,
+        isAuth: true,
+        email: req.user.email,
+        name: req.user.lastname,
+        lastname: req.user.role,
+        role: req.user.role,
+        image: req.user.image
+    })
+})
 
+
+//로그아웃 route
+app.get('/api/users/logout', (req, res) => {
+    User.findOneAndUpdate({ _id: req.user._id },
+        { token: "" }, (err, user) => {
+            if (err) return res.json({ success: false, err })
+            return res.status(200).send({
+                success: true
+            })
+        })
 })
 
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
